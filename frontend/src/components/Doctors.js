@@ -1,38 +1,129 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
-const doctors = [
-  { id: 1, name: 'Dr. Ahmed Hassan', specialty: 'Cardiology', hours: '08:00-16:00' },
-  { id: 2, name: 'Dr. Mohamed Ali', specialty: 'Neurology', hours: '09:00-17:00' },
-  { id: 3, name: 'Dr. Youssef Ibrahim', specialty: 'Orthopedics', hours: '08:00-14:00' },
-  { id: 4, name: 'Dr. Fatma Khaled', specialty: 'Dermatology', hours: '10:00-18:00' },
-  { id: 5, name: 'Dr. Omar Mahmoud', specialty: 'ENT', hours: '08:00-16:00' },
-  { id: 6, name: 'Dr. Nour El Din', specialty: 'Ophthalmology', hours: '09:00-17:00' },
-  { id: 7, name: 'Dr. Khaled Mostafa', specialty: 'General Medicine', hours: '08:00-16:00' },
-  { id: 8, name: 'Dr. Sara Abdelrahman', specialty: 'Radiology', hours: '11:00-19:00' },
-  { id: 9, name: 'Dr. Mahmoud Farouk', specialty: 'Pediatrics', hours: '08:00-14:00' },
-  { id: 10, name: 'Dr. Lina Yassin', specialty: 'Internal Medicine', hours: '09:00-17:00' }
-];
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 function Doctors() {
+  const [doctors, setDoctors] = useState([]);
+  const [showForm, setShowForm] = useState(false);
+  const [editId, setEditId] = useState(null);
+  const [formData, setFormData] = useState({
+    national_id: '',
+    full_name: '',
+    work_hours: '',
+    specialty: ''
+  });
+
+  useEffect(() => {
+    fetchDoctors();
+  }, []);
+
+  const fetchDoctors = async () => {
+    const res = await fetch(`${API_URL}/api/doctors`);
+    const data = await res.json();
+    setDoctors(data);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (editId) {
+      await fetch(`${API_URL}/api/doctors/${editId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+    } else {
+      await fetch(`${API_URL}/api/doctors`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+    }
+    setFormData({ national_id: '', full_name: '', work_hours: '', specialty: '' });
+    setShowForm(false);
+    setEditId(null);
+    fetchDoctors();
+  };
+
+  const handleEdit = (doctor) => {
+    setFormData({
+      national_id: doctor.national_id,
+      full_name: doctor.full_name,
+      work_hours: doctor.work_hours,
+      specialty: doctor.specialty
+    });
+    setEditId(doctor._id);
+    setShowForm(true);
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm('Delete this doctor?')) {
+      await fetch(`${API_URL}/api/doctors/${id}`, { method: 'DELETE' });
+      fetchDoctors();
+    }
+  };
+
   return (
     <div className="card">
-      <h2>👨‍⚕️ Doctors</h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h2>👨⚕️ Doctors</h2>
+        <button className="btn-add" onClick={() => setShowForm(!showForm)}>
+          {showForm ? 'Cancel' : '+ Add Doctor'}
+        </button>
+      </div>
+
+      {showForm && (
+        <form onSubmit={handleSubmit} className="form">
+          <input
+            placeholder="National ID"
+            value={formData.national_id}
+            onChange={(e) => setFormData({ ...formData, national_id: e.target.value })}
+            required
+          />
+          <input
+            placeholder="Full Name"
+            value={formData.full_name}
+            onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+            required
+          />
+          <input
+            placeholder="Work Hours (e.g., 08:00-16:00)"
+            value={formData.work_hours}
+            onChange={(e) => setFormData({ ...formData, work_hours: e.target.value })}
+            required
+          />
+          <input
+            placeholder="Specialty"
+            value={formData.specialty}
+            onChange={(e) => setFormData({ ...formData, specialty: e.target.value })}
+            required
+          />
+          <button type="submit" className="btn-submit">
+            {editId ? 'Update' : 'Add'}
+          </button>
+        </form>
+      )}
+
       <table>
         <thead>
           <tr>
-            <th>ID</th>
+            <th>National ID</th>
             <th>Name</th>
             <th>Specialty</th>
             <th>Work Hours</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
           {doctors.map(doctor => (
-            <tr key={doctor.id}>
-              <td>{doctor.id}</td>
-              <td>{doctor.name}</td>
+            <tr key={doctor._id}>
+              <td>{doctor.national_id}</td>
+              <td>{doctor.full_name}</td>
               <td>{doctor.specialty}</td>
-              <td>{doctor.hours}</td>
+              <td>{doctor.work_hours}</td>
+              <td>
+                <button className="btn-edit" onClick={() => handleEdit(doctor)}>Edit</button>
+                <button className="btn-delete" onClick={() => handleDelete(doctor._id)}>Delete</button>
+              </td>
             </tr>
           ))}
         </tbody>

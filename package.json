@@ -4,7 +4,8 @@
   "description": "Hospital Management System - MongoDB",
   "main": "index.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "dev": "node server.js"
   },
   "dependencies": {
     "mongodb": "^6.3.0",
